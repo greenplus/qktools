@@ -1,0 +1,7 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>数譜の受け渡し — 素数大富豪 数譜検討</title><link rel="stylesheet" href="./styles.css"></head><body><main class="app-shell integration-page"><header class="title-row"><h1>数譜の受け渡し</h1><a href="./">検討に戻る</a></header><section class="panel"><h2>コピーした数譜を開く</h2><ol><li>素数大富豪＋または数譜データベースで、両者の初期手札を含む数譜をコピーします。</li><li>このサイトを開き、「クリップボードから読込」を押します。ブラウザが許可しない場合は、数譜欄に貼り付けて「読み込む」を押します。</li><li>好きな局面を選び、「ここから検討」で自由に着手します。</li></ol></section><section class="panel"><h2>数譜と一緒にリンクで開く</h2><p>外部サイトの「検討する」ボタンから、URLのフラグメントへ数譜を渡せます。数譜はサーバーへのリクエストには含まれません。</p><pre>const url = new URL(REPLAY_SITE_URL);
+url.hash = new URLSearchParams({
+  kifu: completeStandardKifu,
+  penalty: 'normal',
+  returnMode: 'ordered',
+}).toString();
+window.open(url.href, '_blank', 'noopener,noreferrer');</pre><p><code>REPLAY_SITE_URL</code>には公開後のこのサイトのURLを指定します。<code>completeStandardKifu</code>は、両者の初期手札から終局までを含む標準大会数譜です。<code>penalty</code>は<code>normal</code>・<code>one</code>・<code>field</code>、<code>returnMode</code>は<code>ordered</code>・<code>shuffle</code>、<code>seed</code>は補完用の整数を指定できます。</p><p>同梱の<code>integration.mjs</code>にはURL生成と「検討する」ボタンを追加する関数があります。既存サイトのコードへ組み込む場合は、公開URLを指定して使ってください。</p></section><section class="panel"><h2>検討を保存して続ける</h2><p>「検討を保存」のJSON、または「この検討のリンク」で、山札編集と全分岐を保存できます。着手のテキストだけでは、未判明の山札や手動編集を完全には再現できません。</p><p>検討の途中でも保存できます。ドロー後は出札かパスまで進めてから保存してください。同じブラウザでは検討状態を自動保存します。</p></section></main></body></html>

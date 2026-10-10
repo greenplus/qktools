@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2468b3">
+  <meta name="description" content="素数大富豪の数譜を再生し、好きな局面から自分で着手して検討できるサイト。通常2人戦・合成数出しに対応。">
+  <title>素数大富豪 数譜検討</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./app.mjs"></script>
+</head>
+<body>
+<main class="app-shell">
+  <header class="title-row"><h1>素数大富豪 <span>数譜検討</span></h1><span class="pill">通常2人戦</span></header>
+  <details class="panel import-panel" id="importPanel" open>
+    <summary>数譜を読み込む</summary>
+    <label for="kifuInput" class="field-label">素数大富豪＋・数譜データベースの数譜を貼り付け</label>
+    <textarea id="kifuInput" rows="7" spellcheck="false" placeholder="両者の初期手札と、1ターン1行の数譜"></textarea>
+    <div class="button-row"><button id="loadBtn" class="primary-button">読み込む</button><button id="pasteBtn" class="secondary-button">クリップボードから読込</button><button id="sampleBtn" class="ghost-button">サンプル</button><label class="file-button">ファイルを開く<input id="fileInput" type="file" accept=".txt,.json,text/plain,application/json"></label></div>
+    <details class="secondary-details"><summary>ルール・山札の設定</summary><div class="settings-grid">
+      <label>ペナルティ<select id="penaltyRule"><option value="normal">通常（使用する札の枚数）</option><option value="one">常に1枚</option><option value="field">見せ札の枚数</option></select></label>
+      <label>場を流すとき<select id="returnMode"><option value="ordered">順序を保って山札の底へ</option><option value="shuffle">流す札をシャッフルして底へ</option></select></label>
+      <label>補完seed<input id="seedInput" type="number" value="20261009" min="0" max="4294967295"></label>
+      <label class="check-label"><input id="compositeRule" type="checkbox" checked>合成数出しあり</label>
+    </div><p class="microcopy">初期枚数は数譜から読み取ります。ハーフ・特殊ルール・多人数戦には対応しません。本譜の山札順序が設定と違う場合は、記録されたドローを優先して補正します。</p></details>
+  </details>
+  <p id="status" class="status" role="status" aria-live="polite"></p>
+  <section id="workspace" class="workspace" hidden>
+    <div class="board-column">
+      <section class="panel navigation-panel">
+        <div class="section-heading"><label id="gameSelectLabel" for="gameSelect">対局<select id="gameSelect"></select></label><span id="modeBadge" class="pill"></span></div>
+        <div class="button-row navigation"><button id="startBtn" class="ghost-button" aria-label="初期局面へ">|‹</button><button id="backBtn" class="secondary-button">戻る</button><button id="nextBtn" class="primary-button">進む（本譜）</button><button id="endBtn" class="ghost-button">本譜の終局</button></div>
+        <label class="slider-row"><span id="positionLabel"></span><input id="turnSlider" type="range" min="0" max="1" value="0" aria-label="本譜の局面を選ぶ"></label>
+        <div class="button-row"><button id="forkBtn" class="secondary-button">ここから検討</button><button id="mainBtn" class="ghost-button">分岐元の本譜へ</button><button id="flipBtn" class="ghost-button">上下を入替</button></div>
+      </section>
+      <section class="panel game-board" aria-label="対局盤面">
+        <div id="upperHand" class="hand-section"></div>
+        <div class="field-zone"><div class="section-heading"><h2>場</h2><span id="revolutionBadge" class="pill"></span></div><div id="fieldCards" class="cards field-cards"></div><div id="fieldNumber" class="field-number"></div><div class="field-meta"><span id="fieldPlayer"></span><span id="reserveCount"></span><span id="deckCount"></span></div></div>
+        <div id="lowerHand" class="hand-section"></div>
+        <p id="turnLabel" class="turn-label"></p>
+      </section>
+      <section class="panel move-panel" id="movePanel">
+        <div class="section-heading"><h2>検討の着手</h2><span id="draftDraw" class="microcopy"></span></div>
+        <div class="button-row"><button id="normalMode" class="mode-button active" aria-pressed="true">通常出し</button><button id="compositeMode" class="mode-button" aria-pressed="false">合成数出し</button></div>
+        <div id="composeArea"><div class="button-row"><button id="showTarget" class="target-button active" aria-pressed="true">見せ札に追加</button><button id="materialTarget" class="target-button" aria-pressed="false" hidden>材料札に追加</button><button id="multiplyBtn" class="ghost-button" hidden>×</button><button id="powerBtn" class="ghost-button" hidden>^</button><button id="undoSelectBtn" class="ghost-button">1つ戻す</button><button id="clearBtn" class="ghost-button">選び直す</button></div><div class="selection-box"><span>見せ札</span><strong id="shownSelection">—</strong><span id="materialLabel" hidden>材料式</span><strong id="materialSelection" hidden>—</strong></div><div id="jokerAssignments" class="joker-assignments"></div></div>
+        <div class="button-row move-actions"><button id="playBtn" class="primary-button">場に出す</button><button id="drawBtn" class="secondary-button">ドロー</button><button id="passBtn" class="ghost-button">パス</button></div>
+        <details class="secondary-details"><summary>札の表記を直接入力</summary><label class="field-label" for="moveInput">出札（例：QK、9=3^2、KXJ|X=K）</label><div class="input-row"><input id="moveInput" spellcheck="false" autocomplete="off"><button id="inputPlayBtn" class="secondary-button">着手</button></div></details>
+      </section>
+      <details class="panel" id="deckPanel"><summary>山札・再構成情報</summary><p class="microcopy">左が山札の上です。「補完」は数譜から未判明の札です。手札・予備軍とは別の札として管理しています。</p><div id="deckCards" class="deck-cards"></div><p id="deckSourceSummary" class="microcopy"></p><div id="positionNotes" class="position-notes"></div><label for="deckInput" class="field-label">山札の順番を編集</label><textarea id="deckInput" rows="3" spellcheck="false"></textarea><button id="applyDeckBtn" class="secondary-button">この順番で検討を分岐</button><p class="microcopy">今ある山札の順番だけを変えます。札の追加・削除はできません。</p></details>
+    </div>
+    <aside class="record-column">
+      <section class="panel branches-panel"><div class="section-heading"><h2>本譜と検討</h2><button id="renameBtn" class="ghost-button compact">検討に名前</button></div><div id="branchList" class="branch-list"></div></section>
+      <section class="panel"><h2>保存・共有</h2><div class="button-row"><button id="saveSessionBtn" class="secondary-button">検討を保存</button><button id="shareBtn" class="secondary-button">この検討のリンク</button></div><details class="secondary-details"><summary>数譜をコピー・保存</summary><p id="exportLabel" class="microcopy"></p><div class="button-row"><button id="copyRouteBtn" class="ghost-button">現在の手順をコピー</button><button id="saveRouteBtn" class="ghost-button">現在の手順を保存</button><button id="copyMainBtn" class="ghost-button">本譜全体をコピー</button></div><pre id="routeText" class="raw-kifu"></pre></details><p class="microcopy">検討保存（JSON）と検討リンクには、山札・全分岐・現在の局面を含めます。作業はこのブラウザにも自動保存します。</p></section>
+      <details class="panel"><summary>使い方・対応範囲</summary><p>本譜の好きな局面で「ここから検討」を押し、手番側の札をクリックして着手します。両者を自分で操作できます。別の手を選んでも元の分岐を残し、「戻る」や分岐一覧から比較できます。</p><p>ドローは1ターン1回です。合成数は「見せ札」と「材料式」に別々の札を使います。Xの代入値は札を選ぶと指定できます。失敗手は通常ルールに従ってペナルティになります。</p><p>山札は数譜全体から判明する札と順序を採用し、不明部分はseedで補完します。シャッフル等で順序が食い違う記録は、山札内の札を並べ直して追従します。存在しない札や不正な手札記録を勝手に追加することはありません。</p><p>通常54枚・2人戦に対応します。64ビットを超える数の検討着手はMiller–Rabin検査で判定し、検査通過と素数の証明を区別します。本譜の成功・失敗の記録は元数譜を採用します。</p><a href="./integration.html">素数大富豪＋・数譜DBから開く方法</a></details>
+    </aside>
+  </section>
+  <dialog id="nameDialog"><form method="dialog"><h2>検討に名前を付ける</h2><label for="branchName" class="field-label">名前</label><input id="branchName" maxlength="60"><div class="button-row"><button value="cancel" class="ghost-button">キャンセル</button><button value="save" class="primary-button">保存</button></div></form></dialog>
+  <dialog id="shareDialog"><form method="dialog"><h2>検討リンク</h2><p class="microcopy" id="shareNote"></p><label for="shareInput" class="field-label">コピーして共有</label><textarea id="shareInput" rows="4" readonly></textarea><div class="button-row"><button type="button" id="copyShareBtn" class="primary-button">コピー</button><button class="ghost-button">閉じる</button></div></form></dialog>
+  <footer>素数大富豪 数譜検討 · <a href="./integration.html">数譜の受け渡し</a></footer>
+</main>
+</body>
+</html>
